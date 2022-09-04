@@ -1,0 +1,6 @@
+noDefs: true
+haltOnErr: true
+####----####
+Control-z
+####----####
+error: .*missing.*:.*

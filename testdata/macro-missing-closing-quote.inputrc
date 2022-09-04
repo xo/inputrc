@@ -1,0 +1,6 @@
+noDefs: true
+haltOnErr: true
+####----####
+"fo\"": '\'
+####----####
+error: macro missing closing quote
