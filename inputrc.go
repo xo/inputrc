@@ -62,7 +62,7 @@ func UserDefault(u *user.User, cfg *Config, opts ...Option) error {
 		case err != nil:
 			return err
 		}
-		if err := ParseBytes(buf, cfg, append(opts, WithName(name), WithNoDefs(true))...); err != nil {
+		if err := ParseBytes(buf, cfg, append(opts, WithName(name))...); err != nil {
 			return err
 		}
 		return nil

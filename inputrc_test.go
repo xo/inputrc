@@ -106,8 +106,6 @@ func buildOpts(t *testing.T, buf []byte) []Option {
 			t.Fatalf("invalid line %d: %q", i+1, string(line))
 		}
 		switch k := string(bytes.TrimSpace(line[:j])); k {
-		case "noDefs":
-			opts = append(opts, WithNoDefs(parseBool(t, line[j+1:])))
 		case "haltOnErr":
 			opts = append(opts, WithHaltOnErr(parseBool(t, line[j+1:])))
 		case "app":

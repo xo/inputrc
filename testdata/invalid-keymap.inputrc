@@ -1,4 +1,3 @@
-noDefs: true
 haltOnErr: true
 ####----####
 set keymap foo

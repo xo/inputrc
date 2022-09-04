@@ -15,7 +15,6 @@ import (
 // Parser is a inputrc parser.
 type Parser struct {
 	haltOnErr bool
-	noDefs    bool
 	name      string
 	app       string
 	term      string
@@ -44,21 +43,6 @@ func (p *Parser) Parse(r io.Reader, h Handler) error {
 	var err error
 	// reset parser state
 	p.keymap, p.line, p.conds, p.errs = "emacs", 1, append(p.conds[:0], true), p.errs[:0]
-	// pass defaults to handler
-	if !p.noDefs {
-		for k, v := range DefaultVars() {
-			if err = h.Set(k, v); err != nil {
-				return err
-			}
-		}
-		for keymap, m := range DefaultBinds() {
-			for sequence, action := range m {
-				if err = h.Bind(keymap, sequence, action, false); err != nil {
-					return err
-				}
-			}
-		}
-	}
 	// scan file by lines
 	var line []rune
 	var i, end int
@@ -314,7 +298,7 @@ func (p *Parser) do(h Handler, a, b string) error {
 		case err != nil:
 			return err
 		}
-		return Parse(bytes.NewReader(buf), h, WithName(b), WithApp(p.app), WithTerm(p.term), WithMode(p.mode), WithNoDefs(true))
+		return Parse(bytes.NewReader(buf), h, WithName(b), WithApp(p.app), WithTerm(p.term), WithMode(p.mode))
 	}
 	if !p.conds[len(p.conds)-1] {
 		return nil
@@ -338,13 +322,6 @@ type Option func(*Parser)
 func WithHaltOnErr(haltOnErr bool) Option {
 	return func(p *Parser) {
 		p.haltOnErr = haltOnErr
-	}
-}
-
-// WithNoDefs is a parser option to set no passing of defaults to the handler.
-func WithNoDefs(noDefs bool) Option {
-	return func(p *Parser) {
-		p.noDefs = noDefs
 	}
 }
 

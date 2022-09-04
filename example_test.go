@@ -31,7 +31,7 @@ $endif
 
 `
 	cfg := inputrc.NewDefaultConfig()
-	if err := inputrc.Parse(strings.NewReader(example), cfg, inputrc.WithApp("usql"), inputrc.WithNoDefs(true)); err != nil {
+	if err := inputrc.Parse(strings.NewReader(example), cfg, inputrc.WithApp("usql")); err != nil {
 		panic(err)
 	}
 	fmt.Println("editing mode:", cfg.GetString("editing-mode"))
