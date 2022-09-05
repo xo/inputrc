@@ -166,15 +166,13 @@ func buildResult(t *testing.T, exp []byte, cfg *Config, custom map[string][]stri
 	for k, m := range cfg.Binds {
 		for j, v := range m {
 			if db[k][j] != v {
-				vb[k][j] = v
+				if v.Macro {
+					vb[k][j] = `"` + EscapeMacro(v.Action) + `"`
+				} else {
+					vb[k][j] = Escape(v.Action)
+				}
 				count++
 			}
-		}
-	}
-	for k, m := range cfg.Macros {
-		for j, v := range m {
-			vb[k][j] = `"` + Escape(v) + `"`
-			count++
 		}
 	}
 	if count != 0 {

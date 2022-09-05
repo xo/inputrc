@@ -87,13 +87,13 @@ func loadKeymaps(w io.Writer) error {
 	fmt.Fprintln(w, "// DefaultBinds are the default readline bind keymaps.")
 	fmt.Fprintln(w, "//")
 	fmt.Fprintln(w, "// see: INPUTRC=/dev/null bash -c 'bind -pm <keymap>'")
-	fmt.Fprintln(w, "func DefaultBinds() map[string]map[string]string {")
-	fmt.Fprintln(w, "\treturn map[string]map[string]string {")
+	fmt.Fprintln(w, "func DefaultBinds() map[string]map[string]Bind {")
+	fmt.Fprintln(w, "\treturn map[string]map[string]Bind {")
 	for _, keymap := range []string{
 		"emacs", "emacs-standard", "emacs-meta", "emacs-ctlx",
 		"vi", "vi-move", "vi-command", "vi-insert",
 	} {
-		fmt.Fprintf(w, "\t\t%q: map[string]string {\n", keymap)
+		fmt.Fprintf(w, "\t\t%q: map[string]Bind {\n", keymap)
 		s, err := load("bash", "-c", "bind -pm "+keymap)
 		if err != nil {
 			return fmt.Errorf("unable to load keymap %s: %w", keymap, err)
@@ -116,9 +116,9 @@ func loadKeymaps(w io.Writer) error {
 				z = "`" + z + "`"
 			}
 			if !m[z] {
-				fmt.Fprintf(w, "\t\t\tUnescape(%s): %q,\n", z, v[1])
+				fmt.Fprintf(w, "\t\t\tUnescape(%s): Bind{%q, false},\n", z, v[1])
 			} else {
-				fmt.Fprintf(w, "\t\t\t// Unescape(%s): %q, // DUPLICATE KEY\n", z, v[1])
+				fmt.Fprintf(w, "\t\t\t// Unescape(%s): Bind{%q, false}, // DUPLICATE KEY\n", z, v[1])
 			}
 			m[z] = true
 		}

@@ -13,12 +13,12 @@ Control-r: '\C-x'
 ####----####
 binds:
   emacs:
-    \C-E: "blah\a\b\f\t\n\C-M\v\"\'"
-    \C-F: "blah\a\b\f\t\n\C-M\v\"\'"
-    \C-M: "\C-M"
+    \C-E: "blah\a\b\f\t\n\r\v\"\'"
+    \C-F: "blah\a\b\f\t\n\r\v\"\'"
+    \C-M: "\r"
     \C-R: "\C-X"
     \C-Z: "\M-\C-i"
-    \C-?: "\C-?"
+    \C-?: "\d"
     \M-\C-U: "\M-j"
     \M-k: "\M-\C-0"
     \M-y: some-action

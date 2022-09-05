@@ -70,14 +70,30 @@ func UserDefault(u *user.User, cfg *Config, opts ...Option) error {
 	return nil
 }
 
-// Unescape unescapes a readline string.
+// Unescape unescapes a inputrc string.
 func Unescape(s string) string {
 	r := []rune(s)
 	return unescapeRunes(r, 0, len(r))
 }
 
-// Escape escapes a readline string.
+// Escape escapes a inputrc string.
 func Escape(s string) string {
+	return escape(s, map[rune]string{
+		Delete: `\C-?`,
+		Return: `\C-M`,
+	})
+}
+
+// Escape escapes a inputrc macro.
+func EscapeMacro(s string) string {
+	return escape(s, map[rune]string{
+		Delete: `\d`,
+		Return: `\r`,
+	})
+}
+
+// escape
+func escape(s string, m map[rune]string) string {
 	var v []string
 	for _, c := range s {
 		switch c {
@@ -86,7 +102,7 @@ func Escape(s string) string {
 		case Backspace:
 			v = append(v, `\b`)
 		case Delete:
-			v = append(v, `\C-?`) // \d
+			v = append(v, m[Delete]) // \C-? or \d
 		case Esc:
 			v = append(v, `\e`)
 		case Formfeed:
@@ -94,7 +110,7 @@ func Escape(s string) string {
 		case Newline:
 			v = append(v, `\n`)
 		case Return:
-			v = append(v, `\C-M`) // \r
+			v = append(v, m[Return]) // \C-M or \r
 		case Tab:
 			v = append(v, `\t`)
 		case Vertical:
@@ -102,16 +118,21 @@ func Escape(s string) string {
 		case '\\', '"', '\'':
 			v = append(v, `\`+string(c))
 		default:
-			switch {
-			case IsControl(c):
-				v = append(v, `\C-`+string(Decontrol(c)))
-			case IsMeta(c):
-				v = append(v, `\M-`+string(Demeta(c)))
-			case unicode.IsPrint(c):
-				v = append(v, string(c))
-			default:
-				v = append(v, fmt.Sprintf(`\x%2x`, c))
+			var s string
+			if IsControl(c) {
+				s += `\C-`
+				c = Decontrol(c)
 			}
+			if IsMeta(c) {
+				s += `\M-`
+				c = Demeta(c)
+			}
+			if unicode.IsPrint(c) {
+				s += string(c)
+			} else {
+				s += fmt.Sprintf(`\x%2x`, c)
+			}
+			v = append(v, s)
 		}
 	}
 	return strings.Join(v, "")
@@ -129,7 +150,7 @@ func Decontrol(c rune) rune {
 
 // IsControl returns true when c is a Control-c code.
 func IsControl(c rune) bool {
-	return c < ' ' && c&Meta == 0
+	return c < Space && c&Meta == 0
 }
 
 // Enmeta encodes a Meta-c code

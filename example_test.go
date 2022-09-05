@@ -36,8 +36,8 @@ $endif
 	}
 	fmt.Println("editing mode:", cfg.GetString("editing-mode"))
 	fmt.Println("vi-insert:")
-	fmt.Printf("  %s: %s\n", inputrc.Escape(string(inputrc.Return)), cfg.Binds["vi-insert"][string(inputrc.Return)])
-	fmt.Printf("  %s: '%s'\n", inputrc.Escape(string(inputrc.Delete)), inputrc.Escape(cfg.Macros["vi-insert"][string(inputrc.Delete)]))
+	fmt.Printf("  %s: %s\n", inputrc.Escape(string(inputrc.Return)), cfg.Binds["vi-insert"][string(inputrc.Return)].Action)
+	fmt.Printf("  %s: '%s'\n", inputrc.Escape(string(inputrc.Delete)), inputrc.EscapeMacro(cfg.Binds["vi-insert"][string(inputrc.Delete)].Action))
 	// Output:
 	// editing mode: vi
 	// vi-insert:

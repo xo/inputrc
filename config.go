@@ -22,18 +22,16 @@ type Handler interface {
 type Config struct {
 	ReadFileFunc func(string) ([]byte, error)
 	Vars         map[string]interface{}
-	Binds        map[string]map[string]string
-	Macros       map[string]map[string]string
+	Binds        map[string]map[string]Bind
 	Funcs        map[string]func(string, string) error
 }
 
 // NewConfig creates a new inputrc config.
 func NewConfig() *Config {
 	return &Config{
-		Vars:   make(map[string]interface{}),
-		Binds:  make(map[string]map[string]string),
-		Macros: make(map[string]map[string]string),
-		Funcs:  make(map[string]func(string, string) error),
+		Vars:  make(map[string]interface{}),
+		Binds: make(map[string]map[string]Bind),
+		Funcs: make(map[string]func(string, string) error),
 	}
 }
 
@@ -43,7 +41,6 @@ func NewDefaultConfig(opts ...ConfigOption) *Config {
 		ReadFileFunc: os.ReadFile,
 		Vars:         DefaultVars(),
 		Binds:        DefaultBinds(),
-		Macros:       make(map[string]map[string]string),
 		Funcs:        make(map[string]func(string, string) error),
 	}
 	for _, o := range opts {
@@ -84,14 +81,13 @@ func (cfg *Config) Set(name string, value interface{}) error {
 
 // Bind satisfies the Handler interface.
 func (cfg *Config) Bind(keymap, sequence, action string, macro bool) error {
-	m := cfg.Binds
-	if macro {
-		m = cfg.Macros
+	if cfg.Binds[keymap] == nil {
+		cfg.Binds[keymap] = make(map[string]Bind)
 	}
-	if m[keymap] == nil {
-		m[keymap] = make(map[string]string)
+	cfg.Binds[keymap][sequence] = Bind{
+		Action: action,
+		Macro:  macro,
 	}
-	m[keymap][sequence] = action
 	return nil
 }
 
@@ -123,6 +119,12 @@ func (cfg *Config) GetBool(name string) bool {
 		}
 	}
 	return false
+}
+
+// Bind represents a key binding.
+type Bind struct {
+	Action string
+	Macro  bool
 }
 
 // ConfigOption is a inputrc config handler option.
