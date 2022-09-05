@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // Parser is a inputrc parser.
@@ -450,25 +451,49 @@ func decodeKey(r []rune, i, end int) (string, int, error) {
 	for c := grab(r, i+1, end); i < end && c != ':' && c != '#' && !unicode.IsSpace(c) && !unicode.IsControl(c); i++ {
 		c = grab(r, i+1, end)
 	}
-	s := string(r[start:i])
-	z := strings.Index(s, "-")
-	if z == -1 {
-		return string(r[start]), i, nil
+	s := strings.ToLower(string(r[start:i]))
+	meta, control := false, false
+	for {
+		i := strings.Index(s, "-")
+		if i == -1 {
+			break
+		}
+		switch s[:i] {
+		case "control", "ctrl", "c":
+			control = true
+		case "meta", "m":
+			meta = true
+		default:
+			return "", i, ErrUnknownModifier
+		}
+		s = s[i+1:]
 	}
 	var c rune
-	if j := z + 1; j < end && j < i {
-		c = r[j]
+	switch s {
+	case "":
+		return "", i, nil
+	case "del", "delete", "rubout":
+		return string(Delete), i, nil
+	case "esc", "escape":
+		return string(Esc), i, nil
+	case "lfd", "newline":
+		return string(Newline), i, nil
+	case "tab":
+		return string(Tab), i, nil
+	case "spc", "space":
+		return string(Space), i, nil
+	case "vertical":
+		return string(Vertical), i, nil
+	default:
+		c, _ = utf8.DecodeRuneInString(s)
 	}
-	switch strings.ToLower(s[:z]) {
-	case "control", "c", "ctrl":
-		if c == '?' {
-			return string(Delete), i, nil
-		}
-		return string(Encontrol(c)), i, nil
-	case "meta", "m":
-		return string(Enmeta(c)), i, nil
+	if control {
+		c = Encontrol(c)
 	}
-	return "", 0, ErrUnknownModifier
+	if meta {
+		c = Enmeta(c)
+	}
+	return string(c), i, nil
 }
 
 // unescapeRunes decodes escaped string sequence.
