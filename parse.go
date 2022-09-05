@@ -453,11 +453,7 @@ func decodeKey(r []rune, i, end int) (string, int, error) {
 	}
 	s := strings.ToLower(string(r[start:i]))
 	meta, control := false, false
-	for {
-		i := strings.Index(s, "-")
-		if i == -1 {
-			break
-		}
+	for i := strings.Index(s, "-"); i != -1; i = strings.Index(s, "-") {
 		switch s[:i] {
 		case "control", "ctrl", "c":
 			control = true
@@ -472,18 +468,22 @@ func decodeKey(r []rune, i, end int) (string, int, error) {
 	switch s {
 	case "":
 		return "", i, nil
-	case "del", "delete", "rubout":
-		return string(Delete), i, nil
-	case "esc", "escape":
-		return string(Esc), i, nil
-	case "lfd", "newline":
-		return string(Newline), i, nil
+	case "delete", "del", "rubout":
+		c = Delete
+	case "escape", "esc":
+		c = Esc
+	case "newline", "linefeed", "lfd":
+		c = Newline
+	case "return", "ret":
+		c = Return
 	case "tab":
-		return string(Tab), i, nil
-	case "spc", "space":
-		return string(Space), i, nil
-	case "vertical":
-		return string(Vertical), i, nil
+		c = Tab
+	case "space", "spc":
+		c = Space
+	case "formfeed", "ffd":
+		c = Formfeed
+	case "vertical", "vrt":
+		c = Vertical
 	default:
 		c, _ = utf8.DecodeRuneInString(s)
 	}

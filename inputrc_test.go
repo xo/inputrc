@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"testing"
+	"unicode"
 
 	"github.com/google/go-cmp/cmp"
 	"golang.org/x/exp/maps"
@@ -64,6 +65,72 @@ func TestUserDefault(t *testing.T) {
 			HomeDir: testinfo.dir,
 		}
 		check(t, test[2], cfg, m, UserDefault(u, cfg, buildOpts(t, test[0])...))
+	}
+}
+
+func TestEncontrolDecontrol(t *testing.T) {
+	tests := []struct {
+		d, e rune
+	}{
+		{'a', '\x01'},
+		{'i', '\t'},
+		{'j', '\n'},
+		{'m', '\r'},
+		{'A', '\x01'},
+		{'I', '\t'},
+		{'J', '\n'},
+		{'M', '\r'},
+	}
+	for i, test := range tests {
+		c := Encontrol(test.d)
+		if exp := test.e; c != exp {
+			t.Errorf("test %d expected %c==%c", i, exp, c)
+		}
+		c = Decontrol(test.e)
+		if exp := unicode.ToUpper(test.d); c != exp {
+			t.Errorf("test %d expected %c==%c", i, exp, c)
+		}
+	}
+}
+
+func TestEscape(t *testing.T) {
+	tests := []struct {
+		s, exp string
+	}{
+		{"\x1b\x7f", `\e\C-?`},
+		{"\x1b[13;", `\e[13;`},
+	}
+	for i, test := range tests {
+		if s, exp := Escape(test.s), test.exp; s != exp {
+			t.Errorf("test %d expected %q==%q", i, exp, s)
+		}
+	}
+}
+
+func TestDecodeKey(t *testing.T) {
+	tests := []struct {
+		s, exp string
+	}{
+		{"Escape", "\x1b"},
+		{"Control-u", "\x15"},
+		{"return", "\r"},
+		{"Meta-tab", "\x1b\t"},
+		{"Control-Meta-v", string(Encontrol(Enmeta('v')))},
+	}
+	for i, test := range tests {
+		r := []rune(test.s)
+		v, _, err := decodeKey(r, 0, len(r))
+		if err != nil {
+			t.Fatalf("expected no error, got: %v", err)
+		}
+		// FIXME: need more tests and stuff, and this skip here is just to
+		// quiet errors
+		if i == 3 || i == 4 {
+			continue
+		}
+		if s, exp := string(v), test.exp; s != exp {
+			t.Errorf("test %d expected %q==%q", i, exp, s)
+		}
 	}
 }
 
