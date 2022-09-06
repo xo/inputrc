@@ -92,7 +92,7 @@ func EscapeMacro(s string) string {
 	})
 }
 
-// escape
+// escape escapes s using m.
 func escape(s string, m map[rune]string) string {
 	var v []string
 	for _, c := range s {
@@ -173,22 +173,20 @@ type Error string
 
 // Errors.
 const (
-	// ErrUnknownConstruct is the unknown construct error.
-	ErrUnknownConstruct Error = "unknown construct"
 	// ErrBindMissingClosingQuote is the bind missing closing quote error.
 	ErrBindMissingClosingQuote Error = `bind missing closing quote`
 	// ErrMissingColon is the missing : error.
 	ErrMissingColon Error = "missing :"
 	// ErrMacroMissingClosingQuote is the macro missing closing quote error.
 	ErrMacroMissingClosingQuote Error = `macro missing closing quote`
-	// ErrElseWithoutMatchingIf is the $else without matching $if error.
-	ErrElseWithoutMatchingIf Error = "$else without matching $if"
-	// ErrEndifWithoutMatchingIf is the $endif without matching $if error.
-	ErrEndifWithoutMatchingIf Error = "$endif without matching $if"
 	// ErrInvalidKeymap is the invalid keymap error.
 	ErrInvalidKeymap Error = "invalid keymap"
 	// ErrInvalidEditingMode is the invalid editing mode error.
 	ErrInvalidEditingMode Error = "invalid editing mode"
+	// ErrElseWithoutMatchingIf is the $else without matching $if error.
+	ErrElseWithoutMatchingIf Error = "$else without matching $if"
+	// ErrEndifWithoutMatchingIf is the $endif without matching $if error.
+	ErrEndifWithoutMatchingIf Error = "$endif without matching $if"
 	// ErrUnknownModifier is the unknown modifier error.
 	ErrUnknownModifier Error = "unknown modifier"
 )
