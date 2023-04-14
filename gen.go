@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"go/format"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -40,13 +39,13 @@ func run(out string, dump bool) error {
 		return err
 	}
 	if dump {
-		return ioutil.WriteFile(out, buf.Bytes(), 0o644)
+		return os.WriteFile(out, buf.Bytes(), 0o644)
 	}
 	b, err := format.Source(buf.Bytes())
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(out, b, 0o644)
+	return os.WriteFile(out, b, 0o644)
 }
 
 func loadVars(w io.Writer) error {

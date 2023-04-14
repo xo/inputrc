@@ -107,6 +107,30 @@ func TestEscape(t *testing.T) {
 	}
 }
 
+func TestDecode(t *testing.T) {
+	const str = `
+Control-Meta-f: "a"
+Meta-Control-f: "b"
+"\C-\M-f": "c"
+"\M-\C-f": "d"
+Control-Meta-p: "e"
+Meta-Control-p: "f"
+"\C-\M-p": "g"
+"\M-\C-p": "h"
+`
+	t.Logf("decoding:%s", str)
+	cfg := NewConfig()
+	if err := ParseBytes([]byte(str), cfg); err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	t.Logf("decoded as:")
+	for sectKey, sect := range cfg.Binds {
+		for key, bind := range sect {
+			t.Logf("%q: %q 0x%x: %q %t", sectKey, key, []byte(key), bind.Action, bind.Macro)
+		}
+	}
+}
+
 func TestDecodeKey(t *testing.T) {
 	tests := []struct {
 		s, exp string
