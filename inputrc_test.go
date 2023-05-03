@@ -313,12 +313,12 @@ func parseBool(t *testing.T, buf []byte) bool {
 
 func readTestdata(name string) ([]byte, error) {
 	switch name {
-	case "/home/ken/.inputrc":
+	case "/home/ken/.inputrc", "\\home\\ken\\_inputrc":
 		name = "ken.inputrc"
-	case "/etc/inputrc":
+	case "/etc/inputrc", "\\home\\bob\\_inputrc":
 		name = "default.inputrc"
 	}
-	buf, err := testdata.ReadFile(filepath.Join("testdata", name))
+	buf, err := testdata.ReadFile(path.Join("testdata", name))
 	if err != nil {
 		return nil, err
 	}
