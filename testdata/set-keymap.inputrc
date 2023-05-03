@@ -1,6 +1,5 @@
 haltOnErr: true
-strict: true
+strict: false
 ####----####
 set keymap foo
 ####----####
-error: invalid keymap

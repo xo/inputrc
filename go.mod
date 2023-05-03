@@ -1,8 +1,8 @@
 module github.com/xo/inputrc
 
-go 1.19
+go 1.20
 
 require (
-	github.com/google/go-cmp v0.5.8
-	golang.org/x/exp v0.0.0-20220827204233-334a2380cb91
+	github.com/google/go-cmp v0.5.9
+	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
 )

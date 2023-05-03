@@ -16,6 +16,7 @@ import (
 // Parser is a inputrc parser.
 type Parser struct {
 	haltOnErr bool
+	strict    bool
 	name      string
 	app       string
 	term      string
@@ -191,17 +192,19 @@ func (p *Parser) doSet(h Handler, name, value string) error {
 	}
 	switch name {
 	case "keymap":
-		switch value {
-		// see: man readline
-		// see: https://unix.stackexchange.com/questions/303479/what-are-readlines-modes-keymaps-and-their-default-bindings
-		case "emacs", "emacs-standard", "emacs-meta", "emacs-ctlx",
-			"vi", "vi-move", "vi-command", "vi-insert":
-		default:
-			return &ParseError{
-				Name: p.name,
-				Line: p.line,
-				Text: value,
-				Err:  ErrInvalidKeymap,
+		if p.strict {
+			switch value {
+			// see: man readline
+			// see: https://unix.stackexchange.com/questions/303479/what-are-readlines-modes-keymaps-and-their-default-bindings
+			case "emacs", "emacs-standard", "emacs-meta", "emacs-ctlx",
+				"vi", "vi-move", "vi-command", "vi-insert":
+			default:
+				return &ParseError{
+					Name: p.name,
+					Line: p.line,
+					Text: value,
+					Err:  ErrInvalidKeymap,
+				}
 			}
 		}
 		p.keymap = value
@@ -323,6 +326,13 @@ type Option func(*Parser)
 func WithHaltOnErr(haltOnErr bool) Option {
 	return func(p *Parser) {
 		p.haltOnErr = haltOnErr
+	}
+}
+
+// WithStrict is a parser option to set strict keymap parsing.
+func WithStrict(strict bool) Option {
+	return func(p *Parser) {
+		p.strict = strict
 	}
 }
 
