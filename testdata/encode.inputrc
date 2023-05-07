@@ -10,14 +10,18 @@ term: xterm-256
 Control-z: "\M-\C-i"
 Control-r: '\C-x'
 "\r": "\C-m"
+"\M-": "\e"
+"\C-": "\C-"
 ####----####
 binds:
   emacs:
+    \C-@: "\C-@"
     \C-E: "blah\a\b\f\t\n\r\v\"\'"
     \C-F: "blah\a\b\f\t\n\r\v\"\'"
     \C-M: "\r"
     \C-R: "\C-X"
     \C-Z: "\e\t"
+    \e: "\e"
     \e\C-U: "\M-j"
     \C-?: "\d"
     \M-k: "\e\C-P"

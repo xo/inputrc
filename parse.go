@@ -591,15 +591,19 @@ func unescapeRunes(r []rune, i, end int) string {
 				// \C-\M- or \M-\C- control meta prefix
 				if c6 := grab(r, i+6, end); c6 != 0 {
 					s = append(s, Esc, Encontrol(c6))
-				}
-				i += 6
-			case c1 == 'C' && c2 == '-': // \C- control prefix
-				if c3 == '?' {
-					s = append(s, Delete)
+					i += 6
 				} else {
-					s = append(s, Encontrol(c3))
+					i += 5
 				}
+			case c1 == 'C' && c2 == '-' && c3 == '?': // \C-? control + ?
+				s = append(s, Delete)
 				i += 3
+			case c1 == 'C' && c2 == '-': // \C- control prefix
+				s = append(s, Encontrol(c3))
+				i += 3
+			case c1 == 'M' && c2 == '-' && c3 == 0: // \M- isolated meta
+				s = append(s, Esc)
+				i += 2
 			case c1 == 'M' && c2 == '-': // \M- meta prefix
 				s = append(s, Enmeta(c3))
 				i += 3
