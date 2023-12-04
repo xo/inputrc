@@ -103,10 +103,10 @@ func (p *Parser) readNext(r []rune, i, end int) (string, string, token, error) {
 	switch {
 	case r[i] == 's' && grab(r, i+1, end) == 'e' && grab(r, i+2, end) == 't' && unicode.IsSpace(grab(r, i+3, end)):
 		// read set
-		return p.readSymbols(r, i+4, end, tokenSet)
+		return p.readSymbols(r, i+4, end, tokenSet, true)
 	case r[i] == '$':
 		// read construct
-		return p.readSymbols(r, i, end, tokenConstruct)
+		return p.readSymbols(r, i, end, tokenConstruct, false)
 	}
 	// read key seq
 	var seq string
@@ -168,12 +168,21 @@ func (p *Parser) readNext(r []rune, i, end int) (string, string, token, error) {
 }
 
 // readSet reads the next two symbols.
-func (p *Parser) readSymbols(r []rune, i, end int, tok token) (string, string, token, error) {
+func (p *Parser) readSymbols(r []rune, i, end int, tok token, allowStrings bool) (string, string, token, error) {
 	start := findNonSpace(r, i, end)
 	i = findEnd(r, start, end)
 	a := string(r[start:i])
 	start = findNonSpace(r, i, end)
-	i = findEnd(r, start, end)
+	var ok bool
+	if c := grab(r, start, end); allowStrings || c == '"' || c == '\'' {
+		var pos int
+		if pos, ok = findStringEnd(r, start, end); ok {
+			i = pos
+		}
+	}
+	if !allowStrings || !ok {
+		i = findEnd(r, start, end)
+	}
 	return a, string(r[start:i]), tok, nil
 }
 
