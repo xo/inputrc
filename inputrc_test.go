@@ -9,12 +9,9 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"testing"
 	"unicode"
-
-	"github.com/google/go-cmp/cmp"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 const delimiter = "####----####\n"
@@ -182,8 +179,8 @@ func readTest(t *testing.T, name string) [][]byte {
 
 func check(t *testing.T, exp []byte, cfg *Config, m map[string][]string, err error) {
 	res := buildResult(t, exp, cfg, m, err)
-	if diff := cmp.Diff(string(exp), string(res)); diff != "" {
-		t.Errorf("result does not equal expected:\n%s", diff)
+	if !bytes.Equal(exp, res) {
+		t.Errorf("result does not equal expected:\n%s\ngot:\n%s", string(res), string(res))
 	}
 }
 
@@ -215,6 +212,7 @@ func buildOpts(t *testing.T, buf []byte) []Option {
 }
 
 func buildResult(t *testing.T, exp []byte, cfg *Config, custom map[string][]string, err error) []byte {
+	t.Helper()
 	m := errRE.FindSubmatch(exp)
 	switch {
 	case err != nil && m == nil:
@@ -243,8 +241,11 @@ func buildResult(t *testing.T, exp []byte, cfg *Config, custom map[string][]stri
 	}
 	if len(vv) != 0 {
 		fmt.Fprintln(buf, "vars:")
-		keys := maps.Keys(vv)
-		slices.Sort(keys)
+		var keys []string
+		for key := range vv {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
 		for _, k := range keys {
 			fmt.Fprintf(buf, "  %s: %v\n", k, vv[k])
 		}
@@ -270,13 +271,19 @@ func buildResult(t *testing.T, exp []byte, cfg *Config, custom map[string][]stri
 	}
 	if count != 0 {
 		fmt.Fprintln(buf, "binds:")
-		keymaps := maps.Keys(vb)
-		slices.Sort(keymaps)
+		var keymaps []string
+		for key := range vb {
+			keymaps = append(keymaps, key)
+		}
+		sort.Strings(keymaps)
 		for _, k := range keymaps {
 			if len(vb[k]) != 0 {
 				fmt.Fprintf(buf, "  %s:\n", k)
-				binds := maps.Keys(vb[k])
-				slices.Sort(binds)
+				var binds []string
+				for key := range vb[k] {
+					binds = append(binds, key)
+				}
+				sort.Strings(binds)
 				for _, j := range binds {
 					fmt.Fprintf(buf, "    %s: %s\n", Escape(j), vb[k][j])
 				}
@@ -284,8 +291,11 @@ func buildResult(t *testing.T, exp []byte, cfg *Config, custom map[string][]stri
 		}
 	}
 	if len(custom) != 0 {
-		types := maps.Keys(custom)
-		slices.Sort(types)
+		var types []string
+		for key := range custom {
+			types = append(types, key)
+		}
+		sort.Strings(types)
 		for _, typ := range types {
 			if len(custom[typ]) != 0 {
 				fmt.Fprintf(buf, "%s:\n", typ)
