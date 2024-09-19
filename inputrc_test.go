@@ -5,11 +5,12 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os/user"
 	"path"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"testing"
 	"unicode"
 )
@@ -34,10 +35,9 @@ func TestParse(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-	for _, test := range tests {
-		n := test
-		t.Run(filepath.Base(n), func(t *testing.T) {
-			test := readTest(t, n)
+	for _, s := range tests {
+		t.Run(filepath.Base(s), func(t *testing.T) {
+			test := readTest(t, s)
 			if len(test) != 3 {
 				t.Fatalf("len(test) != 3: %d", len(test))
 			}
@@ -241,12 +241,7 @@ func buildResult(t *testing.T, exp []byte, cfg *Config, custom map[string][]stri
 	}
 	if len(vv) != 0 {
 		fmt.Fprintln(buf, "vars:")
-		var keys []string
-		for key := range vv {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-		for _, k := range keys {
+		for _, k := range slices.Sorted(maps.Keys(vv)) {
 			fmt.Fprintf(buf, "  %s: %v\n", k, vv[k])
 		}
 	}
@@ -271,32 +266,17 @@ func buildResult(t *testing.T, exp []byte, cfg *Config, custom map[string][]stri
 	}
 	if count != 0 {
 		fmt.Fprintln(buf, "binds:")
-		var keymaps []string
-		for key := range vb {
-			keymaps = append(keymaps, key)
-		}
-		sort.Strings(keymaps)
-		for _, k := range keymaps {
+		for _, k := range slices.Sorted(maps.Keys(vb)) {
 			if len(vb[k]) != 0 {
 				fmt.Fprintf(buf, "  %s:\n", k)
-				var binds []string
-				for key := range vb[k] {
-					binds = append(binds, key)
-				}
-				sort.Strings(binds)
-				for _, j := range binds {
+				for _, j := range slices.Sorted(maps.Keys(vb[k])) {
 					fmt.Fprintf(buf, "    %s: %s\n", Escape(j), vb[k][j])
 				}
 			}
 		}
 	}
 	if len(custom) != 0 {
-		var types []string
-		for key := range custom {
-			types = append(types, key)
-		}
-		sort.Strings(types)
-		for _, typ := range types {
+		for _, typ := range slices.Sorted(maps.Keys(custom)) {
 			if len(custom[typ]) != 0 {
 				fmt.Fprintf(buf, "%s:\n", typ)
 				for _, v := range custom[typ] {
