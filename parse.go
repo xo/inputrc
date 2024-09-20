@@ -167,7 +167,7 @@ func (p *Parser) readNext(r []rune, i, end int) (string, string, token, error) {
 	return seq, string(r[i:findEnd(r, i, end)]), tokenBind, nil
 }
 
-// readSet reads the next two symbols.
+// readSymbols reads the next two symbols.
 func (p *Parser) readSymbols(r []rune, i, end int, tok token, allowStrings bool) (string, string, token, error) {
 	start := findNonSpace(r, i, end)
 	i = findEnd(r, start, end)
@@ -331,7 +331,7 @@ func (p *Parser) do(h Handler, a, b string) error {
 // Option is a parser option.
 type Option func(*Parser)
 
-// WithHaltOnErr is a parser option to set halt on every encountered error.
+// WithHaltOnErr is a parser option to halt on every encountered error.
 func WithHaltOnErr(haltOnErr bool) Option {
 	return func(p *Parser) {
 		p.haltOnErr = haltOnErr
