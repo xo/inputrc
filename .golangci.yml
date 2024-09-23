@@ -1,0 +1,27 @@
+linters:
+  enable-all: true
+  disable:
+  - cyclop
+  - depguard
+  - execinquery
+  - exhaustive
+  - exhaustruct
+  - exportloopref
+  - funlen
+  - gocognit
+  - goconst
+  - gocyclo
+  - godot
+  - godox
+  - gomnd
+  - lll
+  - mnd
+  - nlreturn
+  - paralleltest
+  - revive
+  - testpackage
+  - unparam
+  - varnamelen
+  - wastedassign
+  - wrapcheck
+  - wsl

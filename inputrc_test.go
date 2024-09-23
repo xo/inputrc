@@ -35,14 +35,14 @@ func TestParse(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-	for _, s := range tests {
-		t.Run(filepath.Base(s), func(t *testing.T) {
-			test := readTest(t, s)
-			if len(test) != 3 {
-				t.Fatalf("len(test) != 3: %d", len(test))
+	for _, test := range tests {
+		t.Run(filepath.Base(test), func(t *testing.T) {
+			exp := readTest(t, test)
+			if len(exp) != 3 {
+				t.Fatalf("len(test) != 3: %d", len(exp))
 			}
-			cfg, m := newConfig()
-			check(t, test[2], cfg, m, ParseBytes(test[1], cfg, buildOpts(t, test[0])...))
+			cfg, m := newConfig(t)
+			check(t, exp[2], cfg, m, ParseBytes(exp[1], cfg, buildOpts(t, exp[0])...))
 		})
 	}
 }
@@ -55,13 +55,13 @@ func TestUserDefault(t *testing.T) {
 		{"/home/ken", "ken.inputrc"},
 		{"/home/bob", "default.inputrc"},
 	}
-	for _, testinfo := range tests {
-		test := readTest(t, path.Join("testdata", testinfo.exp))
-		cfg, m := newConfig()
+	for _, test := range tests {
+		exp := readTest(t, path.Join("testdata", test.exp))
+		cfg, m := newConfig(t)
 		u := &user.User{
-			HomeDir: testinfo.dir,
+			HomeDir: test.dir,
 		}
-		check(t, test[2], cfg, m, UserDefault(u, cfg, buildOpts(t, test[0])...))
+		check(t, exp[2], cfg, m, UserDefault(u, cfg, buildOpts(t, exp[0])...))
 	}
 }
 
@@ -149,14 +149,15 @@ func TestDecodeKey(t *testing.T) {
 		if i == 3 || i == 4 {
 			continue
 		}
-		if s, exp := string(v), test.exp; s != exp {
+		if s, exp := v, test.exp; s != exp {
 			t.Errorf("test %d expected %q==%q", i, exp, s)
 		}
 	}
 }
 
-func newConfig() (*Config, map[string][]string) {
-	cfg := NewDefaultConfig(WithConfigReadFileFunc(readTestdata))
+func newConfig(t *testing.T) (*Config, map[string][]string) {
+	t.Helper()
+	cfg := NewDefaultConfig(WithConfigReadFileFunc(readTestdata(t)))
 	m := make(map[string][]string)
 	cfg.Funcs["$custom"] = func(k, v string) error {
 		m[k] = append(m[k], v)
@@ -170,6 +171,7 @@ func newConfig() (*Config, map[string][]string) {
 }
 
 func readTest(t *testing.T, name string) [][]byte {
+	t.Helper()
 	buf, err := testdata.ReadFile(name)
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
@@ -178,6 +180,7 @@ func readTest(t *testing.T, name string) [][]byte {
 }
 
 func check(t *testing.T, exp []byte, cfg *Config, m map[string][]string, err error) {
+	t.Helper()
 	res := buildResult(t, exp, cfg, m, err)
 	if !bytes.Equal(exp, res) {
 		t.Errorf("result does not equal expected:\n%s\ngot:\n%s", string(res), string(res))
@@ -185,9 +188,10 @@ func check(t *testing.T, exp []byte, cfg *Config, m map[string][]string, err err
 }
 
 func buildOpts(t *testing.T, buf []byte) []Option {
+	t.Helper()
 	lines := bytes.Split(bytes.TrimSpace(buf), []byte{'\n'})
 	var opts []Option
-	for i := 0; i < len(lines); i++ {
+	for i := range lines {
 		line := bytes.TrimSpace(lines[i])
 		j := bytes.Index(line, []byte{':'})
 		if j == -1 {
@@ -292,6 +296,7 @@ func buildResult(t *testing.T, exp []byte, cfg *Config, custom map[string][]stri
 var errRE = regexp.MustCompile(`(?im)^\s*error:\s+(.*)$`)
 
 func parseBool(t *testing.T, buf []byte) bool {
+	t.Helper()
 	switch s := string(bytes.TrimSpace(buf)); s {
 	case "true":
 		return true
@@ -303,22 +308,25 @@ func parseBool(t *testing.T, buf []byte) bool {
 	return false
 }
 
-func readTestdata(name string) ([]byte, error) {
-	switch name {
-	case "/home/ken/.inputrc", "\\home\\ken\\_inputrc":
-		name = "ken.inputrc"
-	case "/etc/inputrc", "\\home\\bob\\_inputrc":
-		name = "default.inputrc"
+func readTestdata(t *testing.T) func(string) ([]byte, error) {
+	t.Helper()
+	return func(name string) ([]byte, error) {
+		switch name {
+		case `/home/ken/.inputrc`, `\home\ken\_inputrc`:
+			name = "ken.inputrc"
+		case `/etc/inputrc`, `/home/bob/.inputrc`, `\home\bob\_inputrc`:
+			name = "default.inputrc"
+		}
+		buf, err := testdata.ReadFile(path.Join("testdata", name))
+		if err != nil {
+			t.Fatalf("unable to open %s: %v", name, err)
+		}
+		v := bytes.Split(buf, []byte(delimiter))
+		if len(v) != 3 {
+			t.Fatalf("test data %s is invalid!", name)
+		}
+		return v[1], nil
 	}
-	buf, err := testdata.ReadFile(path.Join("testdata", name))
-	if err != nil {
-		return nil, err
-	}
-	v := bytes.Split(buf, []byte(delimiter))
-	if len(v) != 3 {
-		return nil, fmt.Errorf("test data %s is invalid!", name)
-	}
-	return v[1], nil
 }
 
 //go:embed testdata/*.inputrc
