@@ -517,34 +517,11 @@ func decodeKey(r []rune, i, end int) (string, int, error) {
 	return string(c), i, nil
 }
 
-/*
-// decodeRunes decodes runes.
-func decodeRunes(r []rune, i, end int) string {
-	r = []rune(unescapeRunes(r, i, end))
-	var s []rune
-	var c0, c1, c3 rune
-	for i, end = 0, len(r); i < end; i++ {
-		c0, c1, c3 = grab(r, i, end), grab(r, i+1, end), grab(r, i+2, end)
-		switch {
-		case c0 == Meta && c1 == Control, c0 == Control && c1 == Meta:
-			s = append(s, Esc, Encontrol(c3))
-			i += 2
-		case c0 == Control:
-			s = append(s, Encontrol(c1))
-			i++
-		case c0 == Meta:
-			s = append(s, Enmeta(c1))
-			i++
-		default:
-			s = append(s, c0)
-		}
-	}
-	return string(s)
-}
-*/
-
 // unescapeRunes decodes escaped string sequence.
 func unescapeRunes(r []rune, i, end int) string {
+	if len(r) == 1 {
+		return string(r)
+	}
 	var s []rune
 	var c0, c1, c2, c3, c4, c5 rune
 	for ; i < end; i++ {
