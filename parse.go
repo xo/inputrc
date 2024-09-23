@@ -519,7 +519,7 @@ func decodeKey(r []rune, i, end int) (string, int, error) {
 
 // unescapeRunes decodes escaped string sequence.
 func unescapeRunes(r []rune, i, end int) string {
-	if len(r) == 1 {
+	if end-i <= 1 {
 		return string(r)
 	}
 	var s []rune
@@ -605,22 +605,22 @@ func unescapeRunes(r []rune, i, end int) string {
 }
 
 // octDigit returns true when r is 0-7.
-func octDigit(c rune) bool {
-	return '0' <= c && c <= '7'
+func octDigit(r rune) bool {
+	return '0' <= r && r <= '7'
 }
 
 // hexDigit returns true when r is 0-9A-Fa-f.
-func hexDigit(c rune) bool {
-	return '0' <= c && c <= '9' || 'A' <= c && c <= 'F' || 'a' <= c && c <= 'f'
+func hexDigit(r rune) bool {
+	return '0' <= r && r <= '9' || 'A' <= r && r <= 'F' || 'a' <= r && r <= 'f'
 }
 
 // hexVal converts a rune to its hex value.
-func hexVal(c rune) rune {
+func hexVal(r rune) rune {
 	switch {
-	case 'a' <= c && c <= 'f':
-		return c - 'a' + 10
-	case 'A' <= c && c <= 'F':
-		return c - 'A' + 10
+	case 'a' <= r && r <= 'f':
+		return r - 'a' + 10
+	case 'A' <= r && r <= 'F':
+		return r - 'A' + 10
 	}
-	return c - '0'
+	return r - '0'
 }
