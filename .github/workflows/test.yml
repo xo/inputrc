@@ -1,15 +1,47 @@
 on: [push, pull_request]
 name: Test
+permissions:
+  contents: read
 jobs:
-  test:
+  test-go:
+    name: Test Go (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            os: ubuntu-latest
+          - platform: linux/arm64
+            os: ubuntu-24.04-arm
+          - platform: darwin/arm64
+            os: macos-latest
+          - platform: windows/amd64
+            os: windows-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: stable
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Test
+        run: |
+          go test -v ./...
+  test-tinygo:
+    name: Test TinyGo
     runs-on: ubuntu-latest
     steps:
-    - name: Install Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: stable
-    - name: Checkout code
-      uses: actions/checkout@v4
-    - name: Test
-      run: |
-        CGO_ENABLED=0 go test -v ./...
+      - name: Install Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: stable
+      - name: Install TinyGo
+        uses: acifani/setup-tinygo@v3
+        with:
+          tinygo-version: "0.42.0"
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Test
+        run: |
+          tinygo test -v ./...

@@ -1,0 +1,2 @@
+# keep LF endings everywhere -- testdata golden files are compared byte-for-byte
+* -text
