@@ -520,7 +520,7 @@ func decodeKey(r []rune, i, end int) (string, int, error) {
 // unescapeRunes decodes escaped string sequence.
 func unescapeRunes(r []rune, i, end int) string {
 	if end-i <= 1 {
-		return string(r)
+		return string(r[i:end])
 	}
 	var s []rune
 	var c0, c1, c2, c3, c4, c5 rune
