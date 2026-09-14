@@ -237,7 +237,7 @@ func buildResult(t *testing.T, exp []byte, cfg *Config, custom map[string][]stri
 	buf := new(bytes.Buffer)
 	// add vars
 	dv := DefaultVars()
-	vv := make(map[string]interface{})
+	vv := make(map[string]any)
 	for k, v := range cfg.Vars {
 		if dv[k] != v {
 			vv[k] = v

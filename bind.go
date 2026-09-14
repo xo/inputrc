@@ -5,8 +5,8 @@ package inputrc
 // DefaultVars are the default readline vars.
 //
 // see: INPUTRC=/dev/null bash -c 'bind -v'
-func DefaultVars() map[string]interface{} {
-	return map[string]interface{}{
+func DefaultVars() map[string]any {
+	return map[string]any{
 		"bind-tty-special-chars":           true,
 		"blink-matching-paren":             false,
 		"byte-oriented":                    false,

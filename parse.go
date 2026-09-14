@@ -233,7 +233,7 @@ func (p *Parser) doSet(h Handler, name, value string) error {
 	}
 	if v := h.Get(name); v != nil {
 		// defined in vars, so pass to set only as that type
-		var z interface{}
+		var z any
 		switch v.(type) {
 		case bool:
 			z = strings.ToLower(value) == "on" || value == "1"

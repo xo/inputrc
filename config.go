@@ -11,9 +11,9 @@ type Handler interface {
 	// Do handles $constructs.
 	Do(typ string, param string) error
 	// Set sets the value.
-	Set(name string, value interface{}) error
+	Set(name string, value any) error
 	// Get gets the value.
-	Get(name string) interface{}
+	Get(name string) any
 	// Bind binds a key sequence to an action for the current keymap.
 	Bind(keymap, sequence, action string, macro bool) error
 }
@@ -21,7 +21,7 @@ type Handler interface {
 // Config is a inputrc config handler.
 type Config struct {
 	ReadFileFunc func(string) ([]byte, error)
-	Vars         map[string]interface{}
+	Vars         map[string]any
 	Binds        map[string]map[string]Bind
 	Funcs        map[string]func(string, string) error
 }
@@ -29,7 +29,7 @@ type Config struct {
 // NewConfig creates a new inputrc config.
 func NewConfig() *Config {
 	return &Config{
-		Vars:  make(map[string]interface{}),
+		Vars:  make(map[string]any),
 		Binds: make(map[string]map[string]Bind),
 		Funcs: make(map[string]func(string, string) error),
 	}
@@ -69,12 +69,12 @@ func (cfg *Config) Do(name, value string) error {
 }
 
 // Get satisfies the Handler interface.
-func (cfg *Config) Get(name string) interface{} {
+func (cfg *Config) Get(name string) any {
 	return cfg.Vars[name]
 }
 
 // Set satisfies the Handler interface.
-func (cfg *Config) Set(name string, value interface{}) error {
+func (cfg *Config) Set(name string, value any) error {
 	cfg.Vars[name] = value
 	return nil
 }
