@@ -183,7 +183,7 @@ func check(t *testing.T, exp []byte, cfg *Config, m map[string][]string, err err
 	t.Helper()
 	res := buildResult(t, exp, cfg, m, err)
 	if !bytes.Equal(exp, res) {
-		t.Errorf("result does not equal expected:\n%s\ngot:\n%s", string(res), string(res))
+		t.Errorf("result does not equal expected:\n%s\ngot:\n%s", string(exp), string(res))
 	}
 }
 
