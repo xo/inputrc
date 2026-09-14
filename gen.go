@@ -52,15 +52,15 @@ func loadVars(w io.Writer) error {
 	fmt.Fprintln(w, "// DefaultVars are the default readline vars.")
 	fmt.Fprintln(w, "//")
 	fmt.Fprintln(w, "// see: INPUTRC=/dev/null bash -c 'bind -v'")
-	fmt.Fprintln(w, "func DefaultVars() map[string]interface{} {")
-	fmt.Fprintln(w, "\treturn map[string]interface{}{")
+	fmt.Fprintln(w, "func DefaultVars() map[string]any {")
+	fmt.Fprintln(w, "\treturn map[string]any{")
 	s, err := load("bash", "-c", "bind -v")
 	if err != nil {
 		return err
 	}
 	for s.Scan() {
 		v := strings.SplitN(strings.TrimSpace(s.Text()), " ", 3)
-		var val interface{} = v[2]
+		var val any = v[2]
 		typ := "q"
 		switch v[2] {
 		case "on":
