@@ -18,6 +18,15 @@ type Handler interface {
 	Bind(keymap, sequence, action string, macro bool) error
 }
 
+// Locator is an optional interface of a Handler. If a Handler implements it,
+// the parser calls Locate with the file name and line number before each Bind,
+// Set and Do call, so that the Handler can report where a directive came from.
+// The name is empty when the input has no name.
+type Locator interface {
+	// Locate records the position of the directive that follows.
+	Locate(name string, line int)
+}
+
 // Config is a inputrc config handler.
 type Config struct {
 	ReadFileFunc func(string) ([]byte, error)

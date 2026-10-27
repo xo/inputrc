@@ -71,8 +71,6 @@ $endif
 ####----####
 vars:
   enable-keypad: true
-  input-meta: true
-  output-meta: true
 binds:
   emacs:
     \eOc: forward-word

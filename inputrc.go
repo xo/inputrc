@@ -16,6 +16,10 @@ import (
 	"unicode"
 )
 
+// DefaultVersion is the readline version that an $if version test compares
+// against, when the caller does not set one with WithVersion.
+const DefaultVersion = "8.3"
+
 // Parse parses inputrc data from r.
 func Parse(r io.Reader, h Handler, opts ...Option) error {
 	return New(opts...).Parse(r, h)
@@ -119,10 +123,6 @@ func escape(s string, m map[rune]string) string {
 			if IsControl(c) {
 				s += `\C-`
 				c = Decontrol(c)
-			}
-			if IsMeta(c) {
-				s += `\M-`
-				c = Demeta(c)
 			}
 			if unicode.IsPrint(c) {
 				s += string(c)

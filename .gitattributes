@@ -1,2 +1,5 @@
-# keep LF endings everywhere -- testdata golden files are compared byte-for-byte
-* -text
+# Every text file is LF on every checkout, including a checkout on Windows.
+#
+# Git for Windows writes CRLF by default. The golden files in testdata are
+# compared byte for byte, and a line that ends in CR does not match. See D89.
+* text=auto eol=lf

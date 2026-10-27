@@ -1,1 +1,12 @@
-*.txt
+# Everything this repository ignores, in one file.
+#
+# There is one .gitignore and it is this one. A second file in a subdirectory
+# is a rule nobody can audit: the question "what does this repository ignore"
+# has to have one answer, in one place.
+
+# The Claude Code permissions of one person. The shared .claude/settings.json
+# is not ignored, because a setting that belongs to the project is committed.
+.claude/settings.local.json
+
+# Scratch notes of one person.
+/notes.txt

@@ -1,8 +1,43 @@
-on: [push, pull_request]
+# Tests inputrc on every push and pull request.
+#
+# The lint job runs golangci-lint once. It reads the go.mod of the directory it
+# runs in, so a second module needs a second run. The Go version comes from
+# go.mod and is not pinned beside it, because a floating Go with a pinned
+# linter breaks the build when a new Go release arrives.
+#
+# The test job runs every test twice with -count=2. A test body that registers
+# something in a registry fails the second time, and registration belongs in
+# init.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 name: Test
 permissions:
   contents: read
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - name: Lint
+        uses: golangci/golangci-lint-action@v9
+      - name: Check formatting
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then
+            echo "these files are not formatted:"
+            echo "$out"
+            exit 1
+          fi
   test-go:
     name: Test Go (${{ matrix.platform }})
     runs-on: ${{ matrix.os }}
@@ -19,29 +54,33 @@ jobs:
           - platform: windows/amd64
             os: windows-latest
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v7
+      - name: Check out
+        uses: actions/checkout@v5
+      - name: Set up Go
+        uses: actions/setup-go@v6
         with:
-          go-version: stable
-      - name: Checkout code
-        uses: actions/checkout@v7
+          go-version-file: go.mod
+          check-latest: true
+      - name: Vet
+        run: go vet ./...
+      - name: Build
+        run: go build ./...
       - name: Test
-        run: |
-          go test -v ./...
+        run: go test -race -count=2 ./...
   test-tinygo:
     name: Test TinyGo
     runs-on: ubuntu-latest
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v7
+      - name: Check out
+        uses: actions/checkout@v5
+      - name: Set up Go
+        uses: actions/setup-go@v6
         with:
-          go-version: stable
+          go-version-file: go.mod
+          check-latest: true
       - name: Install TinyGo
         uses: acifani/setup-tinygo@v3
         with:
           tinygo-version: "0.42.0"
-      - name: Checkout code
-        uses: actions/checkout@v7
       - name: Test
-        run: |
-          tinygo test -v ./...
+        run: tinygo test -v ./...

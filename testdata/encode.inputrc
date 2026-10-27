@@ -22,7 +22,7 @@ binds:
     \C-R: "\C-X"
     \C-Z: "\e\t"
     \e: "\e"
-    \e\C-U: "\M-j"
+    \e\C-U: "\ej"
+    \ek: "\e\C-P"
+    \ey: some-action
     \C-?: "\d"
-    \M-k: "\e\C-P"
-    \M-y: some-action

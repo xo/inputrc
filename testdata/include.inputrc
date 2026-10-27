@@ -10,7 +10,6 @@ vars:
   bell-style: visible
   completion-map-case: true
   completion-query-items: 2000
-  convert-meta: false
   editing-mode: vi
 binds:
   vi-command:

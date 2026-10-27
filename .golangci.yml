@@ -1,27 +1,101 @@
+# Lint configuration.
+#
+# # The rule for adding to this file
+#
+# A linter that makes idiomatic Go worse is disabled here, with the reason
+# written beside it. Only a real defect gets a code change. A change made to
+# quiet a linter, rather than to fix something, is itself the defect: it leaves
+# code that no reader can explain and that the next person copies.
+#
+# # The posture
+#
+# `default: all`, with a disable list. A new linter arriving in a release gets
+# a look rather than silence.
+version: "2"
+
 linters:
-  enable-all: true
+  default: all
   disable:
-  - cyclop
-  - depguard
-  - execinquery
-  - exhaustive
-  - exhaustruct
-  - exportloopref
-  - funlen
-  - gocognit
-  - goconst
-  - gocyclo
-  - godot
-  - godox
-  - gomnd
-  - lll
-  - mnd
-  - nlreturn
-  - paralleltest
-  - revive
-  - testpackage
-  - unparam
-  - varnamelen
-  - wastedassign
-  - wrapcheck
-  - wsl
+    # Complexity metrics. The parser and the generated bind tables are long
+    # by nature, and these count a long table as a complex function.
+    - cyclop
+    - funlen
+    - gocognit
+    - gocyclo
+    - maintidx
+    - nestif
+    # Style opinions that argue with gofmt or with plain code.
+    - lll
+    - wsl
+    - wsl_v5
+    - nlreturn
+    - varnamelen
+    - exhaustruct
+    - exhaustruct_v5
+    - mnd
+    - nonamedreturns
+    # err113 wants every error to be a wrapped sentinel. The rule here is
+    # stricter and different in kind: a sentinel is a constant of type Error,
+    # which err113 does not know how to check.
+    - err113
+    # wrapcheck destroys the identity a caller tests with errors.Is.
+    - wrapcheck
+    # noinlineerr bans `if err := f(); err != nil`, which is the form the Go
+    # standard library uses and gofmt is built around.
+    - noinlineerr
+    # exhaustive fires on a switch that handles some values and answers the
+    # rest after the switch. Its remedy is an empty case with no body, which
+    # says less than the code already does.
+    - exhaustive
+    # A test that touches the process environment or a shared file is not
+    # parallel, and a test package of its own is not always wanted.
+    - paralleltest
+    - testpackage
+    # The generated bind tables repeat string literals on purpose.
+    - goconst
+    # Go comments here are prose and the simple-english rules govern them.
+    - godot
+    - godox
+  settings:
+    # Hard rule 1. The module imports the standard library and nothing else.
+    depguard:
+      rules:
+        main:
+          list-mode: strict
+          allow:
+            - $gostd
+            - github.com/xo/inputrc
+    # A deferred Close returns an error nothing can act on.
+    errcheck:
+      exclude-functions:
+        - (*os.File).Close
+    gosec:
+      excludes:
+        # the caller names the file to parse, which is the point of ParseFile
+        - G304
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+    gocritic:
+      disabled-checks:
+        - exitAfterDefer
+  exclusions:
+    rules:
+      # A test builds its own values and does not answer to these.
+      - path: _test\.go
+        linters:
+          - dupl
+      # The bind tables are generated, and the keymaps repeat each other.
+      - path: bind\.go
+        linters:
+          - dupl
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/xo/inputrc

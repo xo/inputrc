@@ -19,6 +19,7 @@ type Parser struct {
 	strict    bool
 	name      string
 	app       string
+	version   string
 	term      string
 	mode      string
 	keymap    string
@@ -31,7 +32,8 @@ type Parser struct {
 func New(opts ...Option) *Parser {
 	// build parser state
 	p := &Parser{
-		line: 1,
+		line:    1,
+		version: DefaultVersion,
 	}
 	for _, o := range opts {
 		o(p)
@@ -80,6 +82,13 @@ func (p *Parser) Errs() []error {
 	return p.errs
 }
 
+// locate tells h where the current directive is, when h wants to know.
+func (p *Parser) locate(h Handler) {
+	if l, ok := h.(Locator); ok {
+		l.Locate(p.name, p.line)
+	}
+}
+
 // next handles the next statement.
 func (p *Parser) next(h Handler, r []rune, i, end int) error {
 	a, b, tok, err := p.readNext(r, i, end)
@@ -106,7 +115,12 @@ func (p *Parser) readNext(r []rune, i, end int) (string, string, token, error) {
 		return p.readSymbols(r, i+4, end, tokenSet, true)
 	case r[i] == '$':
 		// read construct
-		return p.readSymbols(r, i, end, tokenConstruct, false)
+		a, b, tok, err := p.readSymbols(r, i, end, tokenConstruct, false)
+		if a == "$if" {
+			// the test of an $if can hold spaces, as in "version >= 8.0"
+			b = ifTest(r, i, end)
+		}
+		return a, b, tok, err
 	}
 	// read key seq
 	var seq string
@@ -167,6 +181,16 @@ func (p *Parser) readNext(r []rune, i, end int) (string, string, token, error) {
 	return seq, string(r[i:findEnd(r, i, end)]), tokenBind, nil
 }
 
+// ifTest returns the rest of the line after $if, without a trailing comment.
+func ifTest(r []rune, i, end int) string {
+	i = findEnd(r, i, end)
+	s := string(r[findNonSpace(r, i, end):end])
+	if j := strings.Index(s, "#"); j != -1 {
+		s = s[:j]
+	}
+	return strings.TrimSpace(s)
+}
+
 // readSymbols reads the next two symbols.
 func (p *Parser) readSymbols(r []rune, i, end int, tok token, allowStrings bool) (string, string, token, error) {
 	start := findNonSpace(r, i, end)
@@ -191,6 +215,7 @@ func (p *Parser) doBind(h Handler, sequence, action string, macro bool) error {
 	if !p.conds[len(p.conds)-1] {
 		return nil
 	}
+	p.locate(h)
 	return h.Bind(p.keymap, sequence, action, macro)
 }
 
@@ -229,8 +254,10 @@ func (p *Parser) doSet(h Handler, name, value string) error {
 				Err:  ErrInvalidEditingMode,
 			}
 		}
+		p.locate(h)
 		return h.Set(name, value)
 	}
+	p.locate(h)
 	if v := h.Get(name); v != nil {
 		// defined in vars, so pass to set only as that type
 		var z any
@@ -263,20 +290,128 @@ func (p *Parser) doSet(h Handler, name, value string) error {
 	return h.Set(name, value)
 }
 
+// test evaluates the test of an $if.
+func (p *Parser) test(h Handler, b string) bool {
+	switch {
+	case strings.HasPrefix(b, "mode="):
+		return strings.TrimPrefix(b, "mode=") == p.mode
+	case strings.HasPrefix(b, "term="):
+		return termMatches(strings.TrimPrefix(b, "term="), p.term)
+	}
+	name, op, value, ok := splitTest(b)
+	switch {
+	case !ok:
+		return strings.ToLower(b) == p.app
+	case name == "version":
+		return compareVersions(p.version, value, op)
+	case name == "term":
+		eq := termMatches(value, p.term)
+		return eq == (op != "!=")
+	case name == "mode":
+		return (value == p.mode) == (op != "!=")
+	}
+	// $if variable == value, which readline has had since 8.1
+	var v any
+	if h != nil {
+		v = h.Get(name)
+	}
+	if v == nil {
+		return false
+	}
+	var s string
+	switch x := v.(type) {
+	case bool:
+		s = "off"
+		if x {
+			s = "on"
+		}
+	default:
+		s = fmt.Sprint(x)
+	}
+	eq := strings.EqualFold(s, value)
+	switch op {
+	case "=", "==":
+		return eq
+	case "!=":
+		return !eq
+	}
+	return false
+}
+
+// termMatches returns true when the term test t names the terminal term. As
+// readline does, it compares the whole name and the part before the first
+// dash.
+func termMatches(t, term string) bool {
+	if strings.EqualFold(t, term) {
+		return true
+	}
+	name, _, _ := strings.Cut(term, "-")
+	return strings.EqualFold(t, name)
+}
+
+// splitTest splits an $if test of the form "name op value", where the spaces
+// around op are optional. It returns false when b has no operator.
+func splitTest(b string) (string, string, string, bool) {
+	i := strings.IndexAny(b, "=!<>")
+	if i <= 0 {
+		return "", "", "", false
+	}
+	j := i + 1
+	if j < len(b) && b[j] == '=' {
+		j++
+	}
+	op := b[i:j]
+	switch op {
+	case "=", "==", "!=", "<", "<=", ">", ">=":
+	default:
+		return "", "", "", false
+	}
+	name, value := strings.TrimSpace(b[:i]), strings.TrimSpace(b[j:])
+	if name == "" || value == "" {
+		return "", "", "", false
+	}
+	return name, op, value, true
+}
+
+// compareVersions compares the readline version a to b with op. A version is
+// a major number with an optional minor number, such as 8 or 8.3.
+func compareVersions(a, b, op string) bool {
+	am, an := parseVersion(a)
+	bm, bn := parseVersion(b)
+	c := am - bm
+	if c == 0 {
+		c = an - bn
+	}
+	switch op {
+	case "=", "==":
+		return c == 0
+	case "!=":
+		return c != 0
+	case "<":
+		return c < 0
+	case "<=":
+		return c <= 0
+	case ">":
+		return c > 0
+	case ">=":
+		return c >= 0
+	}
+	return false
+}
+
+// parseVersion parses a version of the form major or major.minor.
+func parseVersion(s string) (int, int) {
+	maj, minor, _ := strings.Cut(s, ".")
+	m, _ := strconv.Atoi(maj)
+	n, _ := strconv.Atoi(minor)
+	return m, n
+}
+
 // do handles a construct.
 func (p *Parser) do(h Handler, a, b string) error {
 	switch a {
 	case "$if":
-		var eval bool
-		switch {
-		case strings.HasPrefix(b, "mode="):
-			eval = strings.TrimPrefix(b, "mode=") == p.mode
-		case strings.HasPrefix(b, "term="):
-			eval = strings.TrimPrefix(b, "term=") == p.term
-		default:
-			eval = strings.ToLower(b) == p.app
-		}
-		p.conds = append(p.conds, eval)
+		p.conds = append(p.conds, p.test(h, b))
 		return nil
 	case "$else":
 		if len(p.conds) == 1 {
@@ -311,12 +446,13 @@ func (p *Parser) do(h Handler, a, b string) error {
 		case err != nil:
 			return err
 		}
-		return Parse(bytes.NewReader(buf), h, WithName(b), WithApp(p.app), WithTerm(p.term), WithMode(p.mode))
+		return Parse(bytes.NewReader(buf), h, WithName(b), WithApp(p.app), WithTerm(p.term), WithMode(p.mode), WithVersion(p.version))
 	}
 	if !p.conds[len(p.conds)-1] {
 		return nil
 	}
 	// delegate unknown construct
+	p.locate(h)
 	if err := h.Do(a, b); err != nil {
 		return &ParseError{
 			Name: p.name,
@@ -356,6 +492,14 @@ func WithName(name string) Option {
 func WithApp(app string) Option {
 	return func(p *Parser) {
 		p.app = app
+	}
+}
+
+// WithVersion is a parser option to set the readline version that $if version
+// tests compare against. The default is DefaultVersion.
+func WithVersion(version string) Option {
+	return func(p *Parser) {
+		p.version = version
 	}
 }
 
@@ -512,7 +656,7 @@ func decodeKey(r []rune, i, end int) (string, int, error) {
 	case control:
 		c = Encontrol(c)
 	case meta:
-		c = Enmeta(c)
+		return string([]rune{Esc, c}), i, nil
 	}
 	return string(c), i, nil
 }
@@ -590,8 +734,8 @@ func unescapeRunes(r []rune, i, end int) string {
 			case c1 == 'M' && c2 == '-' && c3 == 0: // \M- isolated meta
 				s = append(s, Esc)
 				i += 2
-			case c1 == 'M' && c2 == '-': // \M- meta prefix
-				s = append(s, Enmeta(c3))
+			case c1 == 'M' && c2 == '-': // \M- meta prefix, as Esc then the key
+				s = append(s, Esc, c3)
 				i += 3
 			default:
 				s = append(s, c1)
