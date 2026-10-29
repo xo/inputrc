@@ -48,6 +48,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestUserDefault(t *testing.T) {
+	t.Setenv("INPUTRC", "")
 	tests := []struct {
 		dir string
 		exp string

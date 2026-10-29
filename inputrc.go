@@ -40,13 +40,26 @@ func ParseFile(name string, h Handler, opts ...Option) error {
 	return New(append(opts, WithName(name))...).Parse(f, h)
 }
 
-// UserDefault loads default inputrc settings for the user.
+// UserDefault loads default inputrc settings for the user, as readline does.
+//
+// If the INPUTRC environment variable is not empty, UserDefault reads that
+// file and no other. If the file does not exist, UserDefault loads nothing and
+// returns no error, and it does not fall back to another file. If INPUTRC is
+// empty or unset, UserDefault reads the first file that exists of ~/.inputrc
+// (_inputrc on Windows) and /etc/inputrc.
 func UserDefault(u *user.User, cfg *Config, opts ...Option) error {
+	if name := os.Getenv("INPUTRC"); name != "" {
+		buf, err := cfg.ReadFile(name)
+		switch {
+		case err != nil && errors.Is(err, os.ErrNotExist):
+			return nil
+		case err != nil:
+			return err
+		}
+		return ParseBytes(buf, cfg, append(opts, WithName(name))...)
+	}
 	// build possible file list
 	var files []string
-	if name := os.Getenv("INPUTRC"); name != "" {
-		files = append(files, name)
-	}
 	if u != nil {
 		name := ".inputrc"
 		if runtime.GOOS == "windows" {

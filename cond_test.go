@@ -1,6 +1,10 @@
 package inputrc
 
 import (
+	"os"
+	"os/user"
+	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"testing"
@@ -159,6 +163,45 @@ func TestKeymapAfterSet(t *testing.T) {
 		}
 		if _, ok := cfg.Binds[test.keymap][test.seq]; !ok {
 			t.Errorf("%q: expected a bind in %s for %q", test.src, test.keymap, test.seq)
+		}
+	}
+}
+
+func TestUserDefaultInputrc(t *testing.T) {
+	home := ".inputrc"
+	if runtime.GOOS == "windows" {
+		home = "_inputrc"
+	}
+	files := map[string]string{
+		"/custom/inputrc":                "set bell-style none\n",
+		filepath.Join("/home/ken", home): "set bell-style visible\n",
+	}
+	read := func(name string) ([]byte, error) {
+		if s, ok := files[name]; ok {
+			return []byte(s), nil
+		}
+		return nil, os.ErrNotExist
+	}
+	u := &user.User{HomeDir: "/home/ken"}
+	tests := []struct {
+		env string
+		exp string
+	}{
+		// INPUTRC names a file that exists, so only it is read
+		{"/custom/inputrc", "none"},
+		// INPUTRC names a missing file, so nothing is read and there is no fallback
+		{"/missing/inputrc", "audible"},
+		// INPUTRC is empty, so the home file is read
+		{"", "visible"},
+	}
+	for _, test := range tests {
+		t.Setenv("INPUTRC", test.env)
+		cfg := NewDefaultConfig(WithConfigReadFileFunc(read))
+		if err := UserDefault(u, cfg); err != nil {
+			t.Fatalf("INPUTRC=%q: expected no error, got: %v", test.env, err)
+		}
+		if got := cfg.GetString("bell-style"); got != test.exp {
+			t.Errorf("INPUTRC=%q: expected bell-style %q, got %q", test.env, test.exp, got)
 		}
 	}
 }
