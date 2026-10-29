@@ -17,7 +17,7 @@ import (
 
 const delimiter = "####----####\n"
 
-func TestConfig(t *testing.T) {
+func TestConfig(_ *testing.T) {
 	var _ Handler = NewDefaultConfig()
 }
 

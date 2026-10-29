@@ -8,6 +8,9 @@
 # The test job runs every test twice with -count=2. A test body that registers
 # something in a registry fails the second time, and registration belongs in
 # init.
+#
+# The TinyGo job uses the stable Go and not the version in go.mod, because
+# TinyGo needs a newer Go than the module asks for.
 on:
   push:
     branches: [main]
@@ -76,8 +79,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version-file: go.mod
-          check-latest: true
+          go-version: stable
       - name: Install TinyGo
         uses: acifani/setup-tinygo@v3
         with:

@@ -80,6 +80,12 @@ linters:
     gocritic:
       disabled-checks:
         - exitAfterDefer
+    revive:
+      rules:
+        # The scanner loops here are written as a for with an empty body,
+        # which is the shortest way to say "skip while".
+        - name: empty-block
+          disabled: true
   exclusions:
     rules:
       # A test builds its own values and does not answer to these.

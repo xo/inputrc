@@ -125,7 +125,8 @@ func (p *Parser) readNext(r []rune, i, end int) (string, string, token, error) {
 	// read key seq
 	var seq string
 	if r[i] == '"' || r[i] == '\'' {
-		start, ok := i, false
+		start := i
+		var ok bool
 		if i, ok = findStringEnd(r, i, end); !ok {
 			return "", "", tokenNone, &ParseError{
 				Name: p.name,
@@ -167,7 +168,8 @@ func (p *Parser) readNext(r []rune, i, end int) (string, string, token, error) {
 	}
 	// seek
 	if r[i] == '"' || r[i] == '\'' {
-		start, ok := i, false
+		start := i
+		var ok bool
 		if i, ok = findStringEnd(r, i, end); !ok {
 			return "", "", tokenNone, &ParseError{
 				Name: p.name,
@@ -593,13 +595,12 @@ func findEnd(r []rune, i, end int) int {
 
 // findStringEnd finds end of the string, returning end if not found.
 func findStringEnd(r []rune, i, end int) (int, bool) {
-	quote, c := r[i], rune(0)
+	quote := r[i]
 	for i++; i < end; i++ {
-		switch c = r[i]; {
-		case c == '\\':
+		switch r[i] {
+		case '\\':
 			i++
-			continue
-		case c == quote:
+		case quote:
 			return i + 1, true
 		}
 	}
@@ -680,40 +681,40 @@ func unescapeRunes(r []rune, i, end int) string {
 			switch {
 			case c1 == 'a': // \a alert (bell)
 				s = append(s, Alert)
-				i += 1
+				i++
 			case c1 == 'b': // \b backspace
 				s = append(s, Backspace)
-				i += 1
+				i++
 			case c1 == 'd': // \d delete
 				s = append(s, Delete)
-				i += 1
+				i++
 			case c1 == 'e': // \e escape
 				s = append(s, Esc)
-				i += 1
+				i++
 			case c1 == 'f': // \f form feed
 				s = append(s, Formfeed)
-				i += 1
+				i++
 			case c1 == 'n': // \n new line
 				s = append(s, Newline)
-				i += 1
+				i++
 			case c1 == 'r': // \r carriage return
 				s = append(s, Return)
-				i += 1
+				i++
 			case c1 == 't': // \t tab
 				s = append(s, Tab)
-				i += 1
+				i++
 			case c1 == 'v': // \v vertical
 				s = append(s, Vertical)
-				i += 1
+				i++
 			case c1 == '\\', c1 == '"', c1 == '\'': // \\ \" \' literal
 				s = append(s, c1)
-				i += 1
+				i++
 			case c1 == 'x' && hexDigit(c2) && hexDigit(c3): // \xHH hex
 				s = append(s, hexVal(c2)<<4|hexVal(c3))
 				i += 2
 			case c1 == 'x' && hexDigit(c2): // \xH hex
 				s = append(s, hexVal(c2))
-				i += 1
+				i++
 			case octDigit(c1) && octDigit(c2) && octDigit(c3): // \nnn octal
 				s = append(s, (c1-'0')<<6|(c2-'0')<<3|(c3-'0'))
 				i += 3
@@ -722,7 +723,7 @@ func unescapeRunes(r []rune, i, end int) string {
 				i += 2
 			case octDigit(c1): // \n octal
 				s = append(s, c1-'0')
-				i += 1
+				i++
 			case ((c1 == 'C' && c4 == 'M') || (c1 == 'M' && c4 == 'C')) && c2 == '-' && c3 == '\\' && c5 == '-':
 				// \C-\M- or \M-\C- control meta prefix
 				if c6 := grab(r, i+6, end); c6 != 0 {
@@ -745,7 +746,7 @@ func unescapeRunes(r []rune, i, end int) string {
 				i += 3
 			default:
 				s = append(s, c1)
-				i += 1
+				i++
 			}
 			continue
 		}
