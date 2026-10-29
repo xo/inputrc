@@ -261,6 +261,8 @@ func (p *Parser) doSet(h Handler, name, value string) error {
 		p.locate(h)
 		// as in readline, the editing mode also picks the keymap that the
 		// bindings after it go to
+		// and it is the mode that a later $if mode= tests
+		p.mode = value
 		p.keymap = "emacs"
 		if value == "vi" {
 			p.keymap = "vi-insert"

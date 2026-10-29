@@ -167,6 +167,38 @@ func TestKeymapAfterSet(t *testing.T) {
 	}
 }
 
+func TestModeAfterSet(t *testing.T) {
+	const vi = "set editing-mode vi\n$if mode=vi\nset keymap vi-command\n\"d\": probe\n$endif\n"
+	tests := []struct {
+		name string
+		src  string
+		exp  bool
+	}{
+		{"mode", vi, true},
+		{"mode operator", "set editing-mode vi\n$if mode == vi\nset matched on\n$endif\n", true},
+		{"back to emacs", "set editing-mode vi\nset editing-mode emacs\n$if mode=vi\nset matched on\n$endif\n", false},
+		{"include", "set editing-mode vi\n$include inc\n", true},
+	}
+	read := func(name string) ([]byte, error) {
+		if name == "inc" {
+			return []byte(vi), nil
+		}
+		return nil, os.ErrNotExist
+	}
+	for _, test := range tests {
+		cfg := NewDefaultConfig(WithConfigReadFileFunc(read))
+		if err := ParseBytes([]byte(test.src), cfg, WithMode("emacs")); err != nil {
+			t.Fatalf("%s: expected no error, got: %v", test.name, err)
+		}
+		bound := cfg.Binds["vi-command"]["d"].Action == "probe"
+		if matched := cfg.GetBool("matched"); !test.exp && matched {
+			t.Errorf("%s: expected the $if to be false", test.name)
+		} else if test.exp && !bound && !matched {
+			t.Errorf("%s: expected the $if to be true", test.name)
+		}
+	}
+}
+
 func TestUserDefaultInputrc(t *testing.T) {
 	home := ".inputrc"
 	if runtime.GOOS == "windows" {
