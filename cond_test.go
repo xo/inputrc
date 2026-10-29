@@ -111,3 +111,50 @@ func TestCommands(t *testing.T) {
 		}
 	}
 }
+
+func TestSetValues(t *testing.T) {
+	tests := []struct {
+		src  string
+		name string
+		exp  any
+	}{
+		{"set completion-query-items 3\n", "completion-query-items", 3},
+		{"set isearch-terminators x\n", "isearch-terminators", "x"},
+		{"set isearch-terminators \"\\C-a\"\n", "isearch-terminators", `\C-a`},
+		{"set isearch-terminators '\\C-a'\n", "isearch-terminators", `\C-a`},
+		{"set comment-begin \"# \"\n", "comment-begin", "# "},
+		{"set bell-style none # comment\n", "bell-style", "none"},
+	}
+	for _, test := range tests {
+		cfg := NewDefaultConfig()
+		if err := ParseBytes([]byte(test.src), cfg, WithHaltOnErr(true)); err != nil {
+			t.Fatalf("%q: expected no error, got: %v", test.src, err)
+		}
+		if got := cfg.Vars[test.name]; got != test.exp {
+			t.Errorf("%q: expected %#v, got %#v", test.src, test.exp, got)
+		}
+	}
+}
+
+func TestKeymapAfterSet(t *testing.T) {
+	tests := []struct {
+		src    string
+		keymap string
+		seq    string
+	}{
+		{"set keymap emacs-meta\n\"a\": foo\n", "emacs-meta", "a"},
+		{"set editing-mode vi\n\"\\C-xq\": kill-line\n", "vi-insert", "\x18q"},
+		{"set editing-mode vi\nset editing-mode emacs\n\"\\C-xq\": kill-line\n", "emacs", "\x18q"},
+		{"d: backward-char\n", "emacs", "d"},
+		{"\"d\": x\n", "emacs", "d"},
+	}
+	for _, test := range tests {
+		cfg := NewDefaultConfig()
+		if err := ParseBytes([]byte(test.src), cfg, WithHaltOnErr(true)); err != nil {
+			t.Fatalf("%q: expected no error, got: %v", test.src, err)
+		}
+		if _, ok := cfg.Binds[test.keymap][test.seq]; !ok {
+			t.Errorf("%q: expected a bind in %s for %q", test.src, test.keymap, test.seq)
+		}
+	}
+}

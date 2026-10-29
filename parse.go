@@ -191,23 +191,25 @@ func ifTest(r []rune, i, end int) string {
 	return strings.TrimSpace(s)
 }
 
-// readSymbols reads the next two symbols.
+// readSymbols reads the next two symbols. When allowStrings is true and the
+// second symbol starts with a quote, the quotes are removed and the text
+// between them is returned as written.
 func (p *Parser) readSymbols(r []rune, i, end int, tok token, allowStrings bool) (string, string, token, error) {
 	start := findNonSpace(r, i, end)
 	i = findEnd(r, start, end)
 	a := string(r[start:i])
 	start = findNonSpace(r, i, end)
-	var ok bool
-	if c := grab(r, start, end); allowStrings || c == '"' || c == '\'' {
-		var pos int
-		if pos, ok = findStringEnd(r, start, end); ok {
-			i = pos
+	if c := grab(r, start, end); allowStrings && (c == '"' || c == '\'') {
+		if pos, ok := findStringEnd(r, start, end); ok {
+			return a, string(r[start+1 : pos-1]), tok, nil
+		}
+	} else if c == '"' || c == '\'' {
+		// a construct keeps its quoted text whole, such as an $include name
+		if pos, ok := findStringEnd(r, start, end); ok {
+			return a, string(r[start:pos]), tok, nil
 		}
 	}
-	if !allowStrings || !ok {
-		i = findEnd(r, start, end)
-	}
-	return a, string(r[start:i]), tok, nil
+	return a, string(r[start:findEnd(r, start, end)]), tok, nil
 }
 
 // doBind handles a bind.
@@ -255,6 +257,12 @@ func (p *Parser) doSet(h Handler, name, value string) error {
 			}
 		}
 		p.locate(h)
+		// as in readline, the editing mode also picks the keymap that the
+		// bindings after it go to
+		p.keymap = "emacs"
+		if value == "vi" {
+			p.keymap = "vi-insert"
+		}
 		return h.Set(name, value)
 	}
 	p.locate(h)
@@ -578,8 +586,7 @@ func findNonSpace(r []rune, i, end int) int {
 // findEnd finds end of the current symbol (position of next #, space, or line
 // end), returning end if not found.
 func findEnd(r []rune, i, end int) int {
-	for c := grab(r, i+1, end); i < end && c != '#' && !unicode.IsSpace(c) && !unicode.IsControl(c); i++ {
-		c = grab(r, i+1, end)
+	for ; i < end && r[i] != '#' && !unicode.IsSpace(r[i]) && !unicode.IsControl(r[i]); i++ {
 	}
 	return i
 }
@@ -611,8 +618,7 @@ func grab(r []rune, i, end int) rune {
 func decodeKey(r []rune, i, end int) (string, int, error) {
 	// seek end of sequence
 	start := i
-	for c := grab(r, i+1, end); i < end && c != ':' && c != '#' && !unicode.IsSpace(c) && !unicode.IsControl(c); i++ {
-		c = grab(r, i+1, end)
+	for ; i < end && r[i] != ':' && r[i] != '#' && !unicode.IsSpace(r[i]) && !unicode.IsControl(r[i]); i++ {
 	}
 	s := strings.ToLower(string(r[start:i]))
 	meta, control := false, false
