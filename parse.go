@@ -311,7 +311,7 @@ func (p *Parser) test(h Handler, b string) bool {
 	name, op, value, ok := splitTest(b)
 	switch {
 	case !ok:
-		return strings.ToLower(b) == p.app
+		return strings.EqualFold(b, p.app)
 	case name == "version":
 		return compareVersions(p.version, value, op)
 	case name == "term":

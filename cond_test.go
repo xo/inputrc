@@ -31,6 +31,10 @@ func TestIfTests(t *testing.T) {
 		{"term=screen", []Option{WithTerm("xterm-256color")}, false},
 		{"bash", []Option{WithApp("bash")}, true},
 		{"bash # comment", []Option{WithApp("bash")}, true},
+		{"Bash", []Option{WithApp("bash")}, true},
+		{"bash", []Option{WithApp("Bash")}, true},
+		{"Bash", []Option{WithApp("Bash")}, true},
+		{"Bas", []Option{WithApp("Bash")}, false},
 	}
 	for _, test := range tests {
 		cfg := NewDefaultConfig()
