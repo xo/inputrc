@@ -247,6 +247,8 @@ func (p *Parser) doSet(h Handler, name, value string) error {
 		}
 		p.keymap = value
 		return nil
+	case "bell-style", "prefer-visible-bell":
+		return p.doBell(h, name, value)
 	case "editing-mode":
 		switch value {
 		case "emacs", "vi":
@@ -300,6 +302,35 @@ func (p *Parser) doSet(h Handler, name, value string) error {
 		return h.Set(name, true)
 	}
 	return h.Set(name, value)
+}
+
+// doBell handles a set of bell-style or prefer-visible-bell. As in readline,
+// the two variables share one setting, the bell style, so the last one set
+// wins. A set of prefer-visible-bell also keeps its own value.
+func (p *Parser) doBell(h Handler, name, value string) error {
+	style := "audible"
+	if name == "bell-style" {
+		switch strings.ToLower(value) {
+		case "", "audible", "on":
+		case "none", "off":
+			style = "none"
+		case "visible":
+			style = "visible"
+		default:
+			// readline leaves the style as it was
+			return nil
+		}
+	} else if v := strings.ToLower(value); v == "" || v == "on" || v == "1" {
+		style = "visible"
+	}
+	p.locate(h)
+	if err := h.Set("bell-style", style); err != nil {
+		return err
+	}
+	if name == "prefer-visible-bell" {
+		return h.Set(name, style == "visible")
+	}
+	return nil
 }
 
 // test evaluates the test of an $if.

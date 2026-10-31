@@ -144,6 +144,32 @@ func TestSetValues(t *testing.T) {
 	}
 }
 
+func TestBellStyle(t *testing.T) {
+	tests := []struct {
+		src string
+		exp string
+	}{
+		{"set bell-style none\nset prefer-visible-bell on\n", "visible"},
+		{"set prefer-visible-bell on\nset bell-style none\n", "none"},
+		{"set bell-style none\nset prefer-visible-bell off\n", "audible"},
+		{"set bell-style on\n", "audible"},
+		{"set bell-style off\n", "none"},
+		{"set bell-style VISIBLE\n", "visible"},
+		{"set bell-style None\n", "none"},
+		{"set bell-style none\nset bell-style foo\n", "none"},
+		{"set bell-style\n", "audible"},
+	}
+	for _, test := range tests {
+		cfg := NewDefaultConfig()
+		if err := ParseBytes([]byte(test.src), cfg, WithHaltOnErr(true)); err != nil {
+			t.Fatalf("%q: expected no error, got: %v", test.src, err)
+		}
+		if got := cfg.GetString("bell-style"); got != test.exp {
+			t.Errorf("%q: expected %q, got %q", test.src, test.exp, got)
+		}
+	}
+}
+
 func TestKeymapAfterSet(t *testing.T) {
 	tests := []struct {
 		src    string
